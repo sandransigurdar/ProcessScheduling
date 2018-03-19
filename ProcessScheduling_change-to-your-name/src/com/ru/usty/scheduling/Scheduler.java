@@ -11,7 +11,8 @@ public class Scheduler {
 	Policy policy;
 	int quantum;
 
-	Queue<ProcessData> processQueue;
+	//Queue<ProcessData> processQueue;
+	LinkedList<ProcessData> processQueue;
 	/**
 	 * Add any objects and variables here (if needed)
 	 */
@@ -22,10 +23,6 @@ public class Scheduler {
 	 */
 	public Scheduler(ProcessExecution processExecution) {
 		this.processExecution = processExecution;
-
-		/**
-		 * Add general initialization code here (if needed)
-		 */
 	}
 
 	/**
@@ -50,11 +47,9 @@ public class Scheduler {
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
-			
-			processQueue.add(new ProcessData());
-			
-			ProcessData d = processQueue.remove();
-			processQueue.remove(new Integer(5)); //Remove=a stak nr 5
+
+			//ProcessData d = processQueue.remove();
+			//processQueue.remove(new ProcessData(5)); //Remove=a stak nr 5
 			break;
 		case RR:	//Round robin
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
@@ -99,16 +94,20 @@ public class Scheduler {
 	 */
 	public void processAdded(int processID) {
 		//Eigum ad halda afram ad fikta i thessu, vidbot:
-		processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
+
 		/**
 		 * Add scheduling code here
 		 */
 		switch(policy) {
 		case FCFS:	//First-come-first-served
-			System.out.println("processAddfall: First-come-first-served");
+			System.out.println("processAddfall: FCFS");
 			/**
 			 * Add your policy specific add code here (if needed)
 			 */
+			if(processQueue.isEmpty()) {
+				processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
+			}
+			processQueue.add(new ProcessData(processID));
 			
 			break;
 		case RR:	//Round robin
@@ -155,7 +154,7 @@ public class Scheduler {
 		 * Add scheduling code here
 		 */
 		
-		processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
+		
 		/**
 		 * Add scheduling code here
 		 */
@@ -165,7 +164,10 @@ public class Scheduler {
 			/**
 			 * Add your policy specific add code here (if needed)
 			 */
-			
+			processQueue.removeFirst();
+			if(!processQueue.isEmpty()) {
+				processExecution.switchToProcess(processQueue.getFirst().processID);// Vid munum nota thetta, en kannski a fleiri stodum
+			}
 			break;
 		case RR:	//Round robin
 			System.out.println("processFinishedFall:: Round robin, quantum = " + quantum);
