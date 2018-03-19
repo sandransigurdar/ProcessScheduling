@@ -86,6 +86,7 @@ public class Scheduler {
 	 */
 	public void processAdded(int processID) {
 		processExecution.switchToProcess(processID);
+		System.out.println(processExecution.getProcessInfo(processID).totalServiceTime);
 		/**
 		 * Add scheduling code here
 		 */
