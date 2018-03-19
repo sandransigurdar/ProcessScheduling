@@ -1,5 +1,8 @@
 package com.ru.usty.scheduling;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 import com.ru.usty.scheduling.process.ProcessExecution;
 
 public class Scheduler {
@@ -8,6 +11,7 @@ public class Scheduler {
 	Policy policy;
 	int quantum;
 
+	Queue<ProcessData> processQueue;
 	/**
 	 * Add any objects and variables here (if needed)
 	 */
@@ -31,7 +35,15 @@ public class Scheduler {
 
 		this.policy = policy;
 		this.quantum = quantum;
-
+		
+		processQueue = new LinkedList<ProcessData>();
+		
+		processQueue.add(new ProcessData());
+		
+		ProcessData d = processQueue.remove();
+		processQueue.remove(new Integer(5)); //Remove=a stak nr 5
+		processQueue.remove(5); //Remove-a stakið 5
+		
 		/**
 		 * Add general initialization code here (if needed)
 		 */
@@ -85,6 +97,7 @@ public class Scheduler {
 	 * DO NOT CHANGE DEFINITION OF OPERATION
 	 */
 	public void processAdded(int processID) {
+		//Eigum ad halda afram ad fikta i thessu, vidbot:
 		processExecution.switchToProcess(processID);
 		/**
 		 * Add scheduling code here
@@ -96,10 +109,13 @@ public class Scheduler {
 	 * DO NOT CHANGE DEFINITION OF OPERATION
 	 */
 	public void processFinished(int processID) {
-
+		
+		System.out.println("FINISH!");
 		/**
 		 * Add scheduling code here
 		 */
 
 	}
+	
+	//Gætum þurft að gera nýtt interruption fall þegar við erum komin með timer
 }
