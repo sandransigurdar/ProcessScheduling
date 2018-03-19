@@ -37,12 +37,8 @@ public class Scheduler {
 		this.quantum = quantum;
 		
 		processQueue = new LinkedList<ProcessData>();
-		
-		processQueue.add(new ProcessData());
-		
-		ProcessData d = processQueue.remove();
-		processQueue.remove(new Integer(5)); //Remove=a stak nr 5
-		processQueue.remove(5); //Remove-a stakið 5
+
+		//processQueue.remove(5); //Remove-a stakið 5
 		
 		/**
 		 * Add general initialization code here (if needed)
@@ -54,6 +50,11 @@ public class Scheduler {
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
+			
+			processQueue.add(new ProcessData());
+			
+			ProcessData d = processQueue.remove();
+			processQueue.remove(new Integer(5)); //Remove=a stak nr 5
 			break;
 		case RR:	//Round robin
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
@@ -98,10 +99,49 @@ public class Scheduler {
 	 */
 	public void processAdded(int processID) {
 		//Eigum ad halda afram ad fikta i thessu, vidbot:
-		processExecution.switchToProcess(processID);
+		processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
 		/**
 		 * Add scheduling code here
 		 */
+		switch(policy) {
+		case FCFS:	//First-come-first-served
+			System.out.println("processAddfall: First-come-first-served");
+			/**
+			 * Add your policy specific add code here (if needed)
+			 */
+			
+			break;
+		case RR:	//Round robin
+			System.out.println("processAddfall:: Round robin, quantum = " + quantum);
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		case SPN:	//Shortest process next
+			System.out.println("processAddfall:: Shortest process next");
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		case SRT:	//Shortest remaining time
+			System.out.println("processAddfall:: Shortest remaining time");
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		case HRRN:	//Highest response ratio next
+			System.out.println("processAddfall:: Highest response ratio next");
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		case FB:	//Feedback
+			System.out.println("processAddfall:: Feedback, quantum = " + quantum);
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		}
 
 	}
 
@@ -114,6 +154,50 @@ public class Scheduler {
 		/**
 		 * Add scheduling code here
 		 */
+		
+		processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
+		/**
+		 * Add scheduling code here
+		 */
+		switch(policy) {
+		case FCFS:	//First-come-first-served
+			System.out.println("processFinishedFall: First-come-first-served");
+			/**
+			 * Add your policy specific add code here (if needed)
+			 */
+			
+			break;
+		case RR:	//Round robin
+			System.out.println("processFinishedFall:: Round robin, quantum = " + quantum);
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		case SPN:	//Shortest process next
+			System.out.println("processFinishedFall:: Shortest process next");
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		case SRT:	//Shortest remaining time
+			System.out.println("processFinishedFall:: Shortest remaining time");
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		case HRRN:	//Highest response ratio next
+			System.out.println("processFinishedFall:: Highest response ratio next");
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		case FB:	//Feedback
+			System.out.println("processFinishedFall:: Feedback, quantum = " + quantum);
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
+			break;
+		}
 
 	}
 	
