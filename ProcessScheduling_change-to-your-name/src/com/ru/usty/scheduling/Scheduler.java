@@ -14,6 +14,8 @@ public class Scheduler {
     private Thread newThread = null;
 	LinkedList<ProcessData> processQueue;
 
+
+
 	/**
 	 * Add any objects and variables here (if needed)
 	 */
@@ -24,10 +26,6 @@ public class Scheduler {
 	 */
 	public Scheduler(ProcessExecution processExecution) {
 		this.processExecution = processExecution;
-
-		/**
-		 * Add general initialization code here (if needed)
-		 */
 	}
 
 	/**
@@ -52,6 +50,7 @@ public class Scheduler {
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
+
 			break;
 		case RR:	//Round robin
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
@@ -112,18 +111,26 @@ public class Scheduler {
 	/**
 	 * DO NOT CHANGE DEFINITION OF OPERATION
 	 */
-	public void processAdded(final int processID) {
+
+	public void processAdded(int processID) {
+		processExecution.switchToProcess(processID);
+		System.out.println(processExecution.getProcessInfo(processID).totalServiceTime);
 		//Eigum ad halda afram ad fikta i thessu, vidbot:
+
 		/**
 		 * Add scheduling code here
 		 */
 		switch(policy) {
 		case FCFS:	//First-come-first-served
-			System.out.println("processAddfall: First-come-first-served");
-			if (processQueue.isEmpty()) {
-			    processExecution.switchToProcess(processID);
-            }
-            processQueue.add(new ProcessData(processID));
+
+			System.out.println("processAddfall: FCFS");
+			/**
+			 * Add your policy specific add code here (if needed)
+			 */
+			if(processQueue.isEmpty()) {
+				processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
+			}
+			processQueue.add(new ProcessData(processID));
 			
 			break;
 		case RR:	//Round robin
@@ -191,6 +198,7 @@ public class Scheduler {
 			if (!processQueue.isEmpty()) {
 			    processExecution.switchToProcess(processQueue.getFirst().processID);
             }
+
 
 			break;
 		case RR:	//Round robin
