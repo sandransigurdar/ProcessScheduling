@@ -4,14 +4,16 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import com.ru.usty.scheduling.process.ProcessExecution;
+import sun.awt.image.ImageWatched;
 
 public class Scheduler {
 
 	ProcessExecution processExecution;
 	Policy policy;
-	int quantum;
+    int quantum;
+    private Thread newThread = null;
+	LinkedList<ProcessData> processQueue;
 
-	Queue<ProcessData> processQueue;
 	/**
 	 * Add any objects and variables here (if needed)
 	 */
@@ -31,14 +33,14 @@ public class Scheduler {
 	/**
 	 * DO NOT CHANGE DEFINITION OF OPERATION
 	 */
-	public void startScheduling(Policy policy, int quantum) {
+	public void startScheduling(Policy policy, final int quantum) {
 
 		this.policy = policy;
 		this.quantum = quantum;
 		
 		processQueue = new LinkedList<ProcessData>();
 
-		//processQueue.remove(5); //Remove-a stakið 5
+		//processQueue.remove(5); //Remove-a stakiï¿½ 5
 		
 		/**
 		 * Add general initialization code here (if needed)
@@ -50,17 +52,30 @@ public class Scheduler {
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
-			
-			processQueue.add(new ProcessData());
-			
-			ProcessData d = processQueue.remove();
-			processQueue.remove(new Integer(5)); //Remove=a stak nr 5
 			break;
 		case RR:	//Round robin
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+            newThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while(true) {
+                        try {
+                            Thread.sleep(quantum);
+
+
+                        } catch (InterruptedException e) {
+
+                        }
+                        if (!processQueue.isEmpty()) {
+                            int currProcess = processQueue.getFirst().processID;
+                            processQueue.removeFirst();
+                            processQueue.add(new ProcessData(currProcess));
+                            processExecution.switchToProcess(processQueue.getFirst().processID);
+                        }
+                    }
+                }
+            });
+            newThread.start();
 			break;
 		case SPN:	//Shortest process next
 			System.out.println("Starting new scheduling task: Shortest process next");
@@ -97,25 +112,37 @@ public class Scheduler {
 	/**
 	 * DO NOT CHANGE DEFINITION OF OPERATION
 	 */
-	public void processAdded(int processID) {
+	public void processAdded(final int processID) {
 		//Eigum ad halda afram ad fikta i thessu, vidbot:
-		processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
 		/**
 		 * Add scheduling code here
 		 */
 		switch(policy) {
 		case FCFS:	//First-come-first-served
 			System.out.println("processAddfall: First-come-first-served");
-			/**
-			 * Add your policy specific add code here (if needed)
-			 */
+			if (processQueue.isEmpty()) {
+			    processExecution.switchToProcess(processID);
+            }
+            processQueue.add(new ProcessData(processID));
 			
 			break;
 		case RR:	//Round robin
 			System.out.println("processAddfall:: Round robin, quantum = " + quantum);
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+			/*if (newThread != null && newThread.isAlive()) {
+			    newThread.interrupt();
+            }*/
+            /*if (processQueue.isEmpty()) {
+                processExecution.switchToProcess(processID);
+            }*/
+            processQueue.add(new ProcessData(processID));
+
+
+
+
+
+
+
+
 			break;
 		case SPN:	//Shortest process next
 			System.out.println("processAddfall:: Shortest process next");
@@ -154,24 +181,25 @@ public class Scheduler {
 		/**
 		 * Add scheduling code here
 		 */
-		
-		processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
-		/**
-		 * Add scheduling code here
-		 */
+
 		switch(policy) {
 		case FCFS:	//First-come-first-served
 			System.out.println("processFinishedFall: First-come-first-served");
-			/**
-			 * Add your policy specific add code here (if needed)
-			 */
-			
+
+
+			processQueue.removeFirst();
+			if (!processQueue.isEmpty()) {
+			    processExecution.switchToProcess(processQueue.getFirst().processID);
+            }
+
 			break;
 		case RR:	//Round robin
 			System.out.println("processFinishedFall:: Round robin, quantum = " + quantum);
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+
+			if (!processQueue.isEmpty()) {
+                processQueue.removeFirst();
+            }
+
 			break;
 		case SPN:	//Shortest process next
 			System.out.println("processFinishedFall:: Shortest process next");
@@ -201,5 +229,5 @@ public class Scheduler {
 
 	}
 	
-	//Gætum þurft að gera nýtt interruption fall þegar við erum komin með timer
+	//Gaetum turft ad gera nytt interruption fall tegar vid erum komin med timer
 }
