@@ -1,5 +1,5 @@
 package com.ru.usty.scheduling;
-//Segir til um hvaða pólisíu er verið að biðja okkur um að útfæra
+//Segir til um hvada polisiu er verid ad bidja okkur um ad utfaera
 /**
  * 
  * DO NOT CHANGE THIS ENUM
