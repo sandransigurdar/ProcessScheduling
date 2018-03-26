@@ -8,10 +8,13 @@ public class ProcessData {
 		this.processID = processID;
 	}
 
-	public void setStartTime () {startTime = System.currentTimeMillis();}
+	public void setStartTime () { startTime = System.currentTimeMillis(); }
 
 	public void setStopTime () { stopTime = System.currentTimeMillis() - startTime; }
+	
+	public void setFinishTime () { finishTime = System.currentTimeMillis() - startTime; }
 
 	long startTime = 0;
 	long stopTime = 0;
+	long finishTime = 0;
 }

@@ -1,14 +1,12 @@
 package com.ru.usty.scheduling;
 
 import java.util.*;
+import java.util.concurrent.Semaphore;
 
 import com.ru.usty.scheduling.process.Process;
 import com.ru.usty.scheduling.process.ProcessExecution;
 import com.ru.usty.scheduling.process.ProcessInfo;
-import sun.awt.image.ImageWatched;
-
 public class Scheduler {
-
 	ProcessExecution processExecution;
 	Policy policy;
     int quantum;
@@ -26,10 +24,16 @@ public class Scheduler {
     //Time measurements
     long runTimeStarts;
     long runTimeEnds;
-    LinkedList<Long> times;
+    long FCFSavgResponse;
+    long RRavgResponse;
+    long RRavgTurnaround;
+    long FCFSavgTurnaround;
+    int processCounter;
+    LinkedList<Long> responseTimes;
+    LinkedList<Long> turnaroundTimes;
+    Semaphore mutex;
 
-
-
+   
 
 	/**
 	 * Add any objects and variables here (if needed)
@@ -55,64 +59,75 @@ public class Scheduler {
 
 		processQueue = new LinkedList<ProcessData>();
         prioQueue = new PriorityQueue<Integer>();
-        times = new LinkedList<Long>();
-
-        //Feedback lists
-        
-
-		/**
-		 * Add general initialization code here (if needed)
-		 */
+        mutex = new Semaphore(1);
 
 		switch(policy) {
 		case FCFS:	//First-come-first-served
 			System.out.println("Starting new scheduling task: First-come-first-served");
             runTimeStarts = System.currentTimeMillis();
+            responseTimes = new LinkedList<Long>();
+            turnaroundTimes = new LinkedList<Long>();
 
 			break;
 		case RR:	//Round robin
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
-            newThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while(true) {
-                        try {
-                            Thread.sleep(quantum);
-                            long currTime = System.currentTimeMillis();
-                            while((currTime-procStartTime) < quantum) {
-                                Thread.sleep(quantum - (currTime-procStartTime));
-                                currTime = System.currentTimeMillis();
-                            }
-                            System.out.println("Erum i done thraedi");
+			responseTimes = new LinkedList<Long>();
+			turnaroundTimes = new LinkedList<Long>();
+			processCounter = 0;
+			newThread = new Thread(new Runnable() {
+			    @Override
+			    public void run() {
+			        while(true) {
+			            try {
+			                Thread.sleep(quantum);
+			                long currTime = System.currentTimeMillis();
+			                while((currTime-procStartTime) < quantum) {
+			                    Thread.sleep(quantum - (currTime-procStartTime));
+			                    currTime = System.currentTimeMillis();
+			                }
+			                Thread.sleep(8);
 
-                        } catch (InterruptedException e) {
+			            } catch (InterruptedException e) {
 
-                        }
-                        if (!processQueue.isEmpty()) {
-                            int currProcess = processQueue.getFirst().processID;
-                            processQueue.removeFirst();
-                            processQueue.add(new ProcessData(currProcess));
-                            processExecution.switchToProcess(processQueue.getFirst().processID);
-                        }
-                    }
-                }
-            });
-            newThread.start();
+			            }
+			            try {
+							mutex.acquire();
+							if (!processQueue.isEmpty()) {
+				            	ProcessData currProcess = processQueue.removeFirst();
+				                processQueue.add(currProcess);
+				                ProcessData process = processQueue.getFirst();
+				                if (process.stopTime == 0) {
+				                    process.setStopTime();
+				                    responseTimes.add(process.stopTime);
+				                }
+				                processExecution.switchToProcess(process.processID);
+				            }
+							mutex.release();
+						} catch (InterruptedException e) {
+						}
+			            
+			        }
+			    }
+			});
+			newThread.start();
 			break;
 		case SPN:	//Shortest process next
 			System.out.println("Starting new scheduling task: Shortest process next");
 			comp1 = new SPNClass(this);
 			prioQueue = new PriorityQueue<Integer>(10,comp1);
+            responseTimes= new LinkedList<Long>();
 			break;
 		case SRT:	//Shortest remaining time
 			System.out.println("Starting new scheduling task: Shortest remaining time");
 			comp2 = new SRTClass(this);
 			prioQueue = new PriorityQueue<Integer>(10,comp2);
+            responseTimes = new LinkedList<Long>();
 			break;
 		case HRRN:	//Highest response ratio next
 			System.out.println("Starting new scheduling task: Highest response ratio next");
 			comp = new HHRNClass(this);
 			prioQueue = new PriorityQueue<Integer>(10,comp);
+            responseTimes = new LinkedList<Long>();
 
 
 			break;
@@ -139,6 +154,7 @@ public class Scheduler {
                             processQueue.removeFirst();
                             processQueue.add(new ProcessData(currProcess));
                             processExecution.switchToProcess(processQueue.getFirst().processID);
+                            procStartTime = System.currentTimeMillis();
                         }
                     }
                 }
@@ -162,51 +178,40 @@ public class Scheduler {
 		 */
 		switch(policy) {
 		case FCFS:	//First-come-first-served
-
-			System.out.println("processAddfall: FCFS");
 			ProcessData process = new ProcessData(processID);
 			process.setStartTime();
 
 			if(processQueue.isEmpty() && currProcess == -1) {
 			    process.setStopTime();
-			    times.add(process.stopTime);
+			    responseTimes.add(process.stopTime);
 				processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
-                currProcess = processID;
+			    currProcess = processID;
 			}
-			else {
-                processQueue.add(process);
-            }
-
-
+			processQueue.add(process);
 			break;
 		case RR:	//Round robin
-			System.out.println("processAddfall:: Round robin, quantum = " + quantum);
-
-
-           /* if (!processQueue.isEmpty()) {
-                if (newThread != null && newThread.isAlive()) {
-                    newThread.interrupt();
-                }
-
-                if (processQueue.isEmpty()) {
-                    processQueue.add(new ProcessData(processID));
-                }
-            }*/
-
-
-            if(currProcess == -1) {
-                processQueue.add(new ProcessData(processID));
-                processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
-                currProcess = processID;
-                procStartTime = System.currentTimeMillis();
-            }
-            else {
-                processQueue.add(new ProcessData(processID));
-            }
+			try {
+				mutex.acquire();
+				ProcessData rrprocess = new ProcessData(processID);
+				rrprocess.setStartTime();
+				
+				if(currProcess == -1) {
+				    rrprocess.setStopTime();
+				    responseTimes.add(rrprocess.stopTime);
+				    processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
+				    currProcess = processID;
+				    procStartTime = System.currentTimeMillis();
+				}
+				processQueue.add(rrprocess);
+				mutex.release();
+			} catch (InterruptedException e) {	}
+			
 
 			break;
 		case SPN:	//Shortest process next
 			System.out.println("processAddfall:: Shortest process next");
+			ProcessData spnprocess = new ProcessData(processID);
+			spnprocess.setStartTime();
 
 
 			if (currProcess == -1) {
@@ -247,7 +252,6 @@ public class Scheduler {
                 prioQueue.add(processID);
             }
 
-
 			break;
 		case FB:	//Feedback
 			System.out.println("processAddfall:: Feedback, quantum = " + quantum);
@@ -263,45 +267,61 @@ public class Scheduler {
 	 * DO NOT CHANGE DEFINITION OF OPERATION
 	 */
 	public void processFinished(int processID) {
-
-		System.out.println("FINISH!");
 		/**
 		 * Add scheduling code here
 		 */
 
 		switch(policy) {
 		case FCFS:	//First-come-first-served
-			System.out.println("processFinishedFall: First-come-first-served");
+			ProcessData oldProcess = processQueue.removeFirst();
+			oldProcess.setFinishTime();
+			turnaroundTimes.add(oldProcess.finishTime);
 
-
-            if (!processQueue.isEmpty()) {
-                ProcessData process = processQueue.remove();
-                if (process.stopTime == 0) {
-                    process.setStopTime();
-                    times.add(process.stopTime);
-                    System.out.println(process.stopTime);
-                }
-                processExecution.switchToProcess(process.processID);
-            }
-            else {
-                runTimeEnds = System.currentTimeMillis() - runTimeStarts;
-                System.out.println(runTimeEnds);
-                currProcess = -1;
-            }
-
+			if (!processQueue.isEmpty()) {
+			    ProcessData process = processQueue.getFirst();
+			    if (process.stopTime == 0) {
+			        process.setStopTime();
+			        responseTimes.add(process.stopTime);
+			    }
+			    processExecution.switchToProcess(process.processID);
+			}
+			else {
+			    currProcess = -1;
+			    FCFSavgResponse = TimeCalculations.AverageTime(responseTimes);
+			    FCFSavgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
+			    System.out.println("FCFS average response time: " + FCFSavgResponse);
+			    System.out.println("FCFS average turnaround time: " + FCFSavgTurnaround);
+			}
 			break;
 		case RR:	//Round robin
-			System.out.println("processFinishedFall:: Round robin, quantum = " + quantum);
+			try {
+				mutex.acquire();
+				processCounter++;
+				ProcessData oldRRProcess = processQueue.remove();
+				oldRRProcess.setFinishTime();
+				turnaroundTimes.add(oldRRProcess.finishTime);
 
-            if (!processQueue.isEmpty()) {
-                currProcess = processQueue.remove().processID;
-                processExecution.switchToProcess(currProcess);
-                procStartTime = System.currentTimeMillis();
-            }
-            else {
-                currProcess = -1;
-            }
-
+				if (!processQueue.isEmpty()) {
+					ProcessData process = processQueue.getFirst();
+				    if (process.stopTime == 0) {
+				        process.setStopTime();
+				        responseTimes.add(process.stopTime);
+				    }
+				    processExecution.switchToProcess(process.processID);
+				    procStartTime = System.currentTimeMillis();
+				}
+				else {
+				    currProcess = -1;
+				    if (processCounter == 15) {
+					    RRavgResponse = TimeCalculations.AverageTime(responseTimes);
+					    RRavgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
+					    System.out.println("Round robin average response time:"+RRavgResponse);
+					    System.out.println("Round robin average turnaround time:"+RRavgTurnaround);
+				    }
+				}
+				mutex.release();
+			} catch (InterruptedException e) {	}
+			
             break;
 		case SPN:	//Shortest process next
 			System.out.println("processFinishedFall:: Shortest process next");
