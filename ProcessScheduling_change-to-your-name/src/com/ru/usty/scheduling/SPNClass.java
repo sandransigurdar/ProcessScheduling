@@ -21,8 +21,9 @@ public class SPNClass implements Comparator<Integer> {
         if (first < second) {
             return -1;
         }
-        else {
+        if (first > second) {
             return 1;
         }
+        return 0;
     }
 }

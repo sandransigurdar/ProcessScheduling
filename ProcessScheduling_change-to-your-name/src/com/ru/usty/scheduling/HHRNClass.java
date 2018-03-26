@@ -14,7 +14,7 @@ public class HHRNClass implements Comparator<Integer> {
 
     @Override
     public int compare(Integer t1, Integer t2) {
-
+        System.out.println(HHRNs.processExecution.getProcessInfo(t1).elapsedWaitingTime);
         long first = (HHRNs.processExecution.getProcessInfo(t1).elapsedWaitingTime + HHRNs.processExecution.getProcessInfo(t1).totalServiceTime) / HHRNs.processExecution.getProcessInfo(t1).totalServiceTime;
         long second = (HHRNs.processExecution.getProcessInfo(t2).elapsedWaitingTime + HHRNs.processExecution.getProcessInfo(t2).totalServiceTime) / HHRNs.processExecution.getProcessInfo(t2).totalServiceTime;
 

@@ -1,9 +1,6 @@
 package com.ru.usty.scheduling;
 
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 import com.ru.usty.scheduling.process.Process;
 import com.ru.usty.scheduling.process.ProcessExecution;
@@ -19,10 +16,18 @@ public class Scheduler {
 	LinkedList<ProcessData> processQueue;
 	PriorityQueue<Integer> prioQueue;
 	HHRNClass comp;
+	SPNClass comp1;
+	SRTClass comp2;
 	long procStartTime;
 	int currProcess;
-    ProcessInfo info;
-    int tala;
+    int newprocess;
+
+
+    //Time measurements
+    long runTimeStarts;
+    long runTimeEnds;
+    LinkedList<Long> times;
+
 
 
 
@@ -50,7 +55,10 @@ public class Scheduler {
 
 		processQueue = new LinkedList<ProcessData>();
         prioQueue = new PriorityQueue<Integer>();
-		//processQueue.remove(5); //Remove-a staki� 5
+        times = new LinkedList<Long>();
+
+        //Feedback lists
+        
 
 		/**
 		 * Add general initialization code here (if needed)
@@ -59,9 +67,7 @@ public class Scheduler {
 		switch(policy) {
 		case FCFS:	//First-come-first-served
 			System.out.println("Starting new scheduling task: First-come-first-served");
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+            runTimeStarts = System.currentTimeMillis();
 
 			break;
 		case RR:	//Round robin
@@ -95,14 +101,13 @@ public class Scheduler {
 			break;
 		case SPN:	//Shortest process next
 			System.out.println("Starting new scheduling task: Shortest process next");
-			//comp = new ShortestProcessNext();
-			prioQueue = new PriorityQueue<Integer>(10,comp);
+			comp1 = new SPNClass(this);
+			prioQueue = new PriorityQueue<Integer>(10,comp1);
 			break;
 		case SRT:	//Shortest remaining time
 			System.out.println("Starting new scheduling task: Shortest remaining time");
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+			comp2 = new SRTClass(this);
+			prioQueue = new PriorityQueue<Integer>(10,comp2);
 			break;
 		case HRRN:	//Highest response ratio next
 			System.out.println("Starting new scheduling task: Highest response ratio next");
@@ -113,16 +118,34 @@ public class Scheduler {
 			break;
 		case FB:	//Feedback
 			System.out.println("Starting new scheduling task: Feedback, quantum = " + quantum);
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+            newThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while(true) {
+                        try {
+                            Thread.sleep(quantum);
+                            long currTime = System.currentTimeMillis();
+                            while((currTime-procStartTime) < quantum) {
+                                Thread.sleep(quantum - (currTime-procStartTime));
+                                currTime = System.currentTimeMillis();
+                            }
+                            System.out.println("Erum i done thraedi");
+
+                        } catch (InterruptedException e) {
+
+                        }
+                        if (!processQueue.isEmpty()) {
+                            int currProcess = processQueue.getFirst().processID;
+                            processQueue.removeFirst();
+                            processQueue.add(new ProcessData(currProcess));
+                            processExecution.switchToProcess(processQueue.getFirst().processID);
+                        }
+                    }
+                }
+            });
+            newThread.start();
 			break;
 		}
-
-		/**
-		 * Add general scheduling or initialization code here (if needed)
-		 */
-
 	}
 
 	/**
@@ -141,16 +164,17 @@ public class Scheduler {
 		case FCFS:	//First-come-first-served
 
 			System.out.println("processAddfall: FCFS");
-			/**
-			 * Add your policy specific add code here (if needed)
-			 */
+			ProcessData process = new ProcessData(processID);
+			process.setStartTime();
 
 			if(processQueue.isEmpty() && currProcess == -1) {
+			    process.setStopTime();
+			    times.add(process.stopTime);
 				processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
                 currProcess = processID;
 			}
 			else {
-                processQueue.add(new ProcessData(processID));
+                processQueue.add(process);
             }
 
 
@@ -171,14 +195,13 @@ public class Scheduler {
 
 
             if(currProcess == -1) {
+                processQueue.add(new ProcessData(processID));
                 processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
                 currProcess = processID;
                 procStartTime = System.currentTimeMillis();
             }
             else {
                 processQueue.add(new ProcessData(processID));
-
-
             }
 
 			break;
@@ -186,10 +209,11 @@ public class Scheduler {
 			System.out.println("processAddfall:: Shortest process next");
 
 
-			if (prioQueue.isEmpty()) {
+			if (currProcess == -1) {
 			    processExecution.switchToProcess(processID);
+			    currProcess = processID;
             }
-            while(prioQueue.size() != 0) {
+            else {
 			    prioQueue.add(processID);
             }
 
@@ -197,16 +221,25 @@ public class Scheduler {
 			break;
 		case SRT:	//Shortest remaining time
 			System.out.println("processAddfall:: Shortest remaining time");
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+
+
+            if (prioQueue.isEmpty() && currProcess == -1) {
+                prioQueue.add(processID);
+                processExecution.switchToProcess(processID);
+                currProcess = processID;
+            }
+            else {
+                prioQueue.add(processID);
+                if (prioQueue.peek() != currProcess) {
+                    processExecution.switchToProcess(prioQueue.peek());
+                }
+            }
+
 			break;
 		case HRRN:	//Highest response ratio next
 			System.out.println("processAddfall:: Highest response ratio next");
 
-
-
-            if (prioQueue.isEmpty() && currProcess == -1) {
+            if (currProcess == -1) {
                 processExecution.switchToProcess(processID);
                 currProcess = processID;
             }
@@ -241,25 +274,24 @@ public class Scheduler {
 			System.out.println("processFinishedFall: First-come-first-served");
 
 
-			/*processQueue.removeFirst();
-			if (!processQueue.isEmpty()) {
-			    processExecution.switchToProcess(processQueue.getFirst().processID);
-
-            }*/
             if (!processQueue.isEmpty()) {
-                processExecution.switchToProcess(processQueue.remove().processID);
+                ProcessData process = processQueue.remove();
+                if (process.stopTime == 0) {
+                    process.setStopTime();
+                    times.add(process.stopTime);
+                    System.out.println(process.stopTime);
+                }
+                processExecution.switchToProcess(process.processID);
             }
             else {
+                runTimeEnds = System.currentTimeMillis() - runTimeStarts;
+                System.out.println(runTimeEnds);
                 currProcess = -1;
             }
 
 			break;
 		case RR:	//Round robin
 			System.out.println("processFinishedFall:: Round robin, quantum = " + quantum);
-
-			/*if (!processQueue.isEmpty()) {
-                processQueue.removeFirst();
-            }*/
 
             if (!processQueue.isEmpty()) {
                 currProcess = processQueue.remove().processID;
@@ -274,6 +306,13 @@ public class Scheduler {
 		case SPN:	//Shortest process next
 			System.out.println("processFinishedFall:: Shortest process next");
 
+			if (!prioQueue.isEmpty()) {
+                newprocess = prioQueue.remove();
+                processExecution.switchToProcess(newprocess);
+            }
+            else {
+			    currProcess = -1;
+            }
 
 
 
@@ -281,24 +320,26 @@ public class Scheduler {
 		case SRT:	//Shortest remaining time
 			System.out.println("processFinishedFall:: Shortest remaining time");
 
-
+            prioQueue.remove();
+            if (!prioQueue.isEmpty()) {
+                processExecution.switchToProcess(prioQueue.peek());
+            }
+            else {
+                currProcess = -1;
+            }
 
 			break;
 		case HRRN:	//Highest response ratio next
 			System.out.println("processFinishedFall:: Highest response ratio next");
 
 
-            if (!processQueue.isEmpty() && currProcess != -1) {
-                int newprocess = prioQueue.remove();
+            if (!prioQueue.isEmpty()) {
+                newprocess = prioQueue.remove();
                 processExecution.switchToProcess(newprocess);
             }
             else {
                 currProcess = -1;
             }
-
-
-
-
 
 			break;
 		case FB:	//Feedback
@@ -311,5 +352,4 @@ public class Scheduler {
 
 	}
 
-	//Gaetum turft ad gera nytt interruption fall tegar vid erum komin med timer
 }
