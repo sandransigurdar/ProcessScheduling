@@ -1,7 +1,5 @@
 package com.ru.usty.scheduling;
 
-import org.omg.CORBA.INTERNAL;
-
 import java.util.Comparator;
 
 public class HHRNClass implements Comparator<ProcessData> {
