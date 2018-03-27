@@ -334,8 +334,8 @@ public class Scheduler {
 			    if (processCounter == 15) {
 				    avgResponse = TimeCalculations.AverageTime(responseTimes);
 				    avgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
-				    System.out.println("Round robin average response time:"+avgResponse);
-				    System.out.println("Round robin average turnaround time:"+avgTurnaround);
+				    System.out.println("SPN average response time:"+avgResponse);
+				    System.out.println("SPN average turnaround time:"+avgTurnaround);
 			    }
             }
 			break;
@@ -358,8 +358,8 @@ public class Scheduler {
                 if (processCounter == 15) {
 				    avgResponse = TimeCalculations.AverageTime(responseTimes);
 				    avgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
-				    System.out.println("Round robin average response time:"+avgResponse);
-				    System.out.println("Round robin average turnaround time:"+avgTurnaround);
+				    System.out.println("SRT average response time:"+avgResponse);
+				    System.out.println("SRT average turnaround time:"+avgTurnaround);
 			    }
             }
 
