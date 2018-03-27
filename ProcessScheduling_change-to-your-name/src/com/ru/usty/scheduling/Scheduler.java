@@ -32,6 +32,18 @@ public class Scheduler {
     LinkedList<Long> turnaroundTimes;
     Semaphore mutex;
 
+    //Feedback Lists
+    LinkedList<LinkedList> listOfLists;
+    LinkedList<ProcessData> listOne;
+    LinkedList<ProcessData> listTwo;
+    LinkedList<ProcessData> listThree;
+    LinkedList<ProcessData> listFour;
+    LinkedList<ProcessData> listFive;
+    LinkedList<ProcessData> listSix;
+    LinkedList<ProcessData> listSeven;
+    boolean listIsEmpty = false;
+    int listPosition = 0;
+
 
 	/**
 	 * DO NOT CHANGE DEFINITION OF OPERATION
@@ -124,6 +136,24 @@ public class Scheduler {
 			break;
 		case FB:	//Feedback
 			System.out.println("Starting new scheduling task: Feedback, quantum = " + quantum);
+			listOfLists = new LinkedList<LinkedList>();
+			listOne = new LinkedList<ProcessData>();
+            listTwo = new LinkedList<ProcessData>();
+            listThree = new LinkedList<ProcessData>();
+            listFour = new LinkedList<ProcessData>();
+            listFive = new LinkedList<ProcessData>();
+            listSix = new LinkedList<ProcessData>();
+            listSeven = new LinkedList<ProcessData>();
+
+            listOfLists.add(listOne);
+            listOfLists.add(listTwo);
+            listOfLists.add(listThree);
+            listOfLists.add(listFour);
+            listOfLists.add(listFive);
+            listOfLists.add(listSix);
+            listOfLists.add(listSeven);
+
+            mutex = new Semaphore(1);
             newThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -135,18 +165,45 @@ public class Scheduler {
                                 Thread.sleep(quantum - (currTime-procStartTime));
                                 currTime = System.currentTimeMillis();
                             }
-                            System.out.println("Erum i done thraedi");
 
                         } catch (InterruptedException e) {
 
                         }
-                        if (!processQueue.isEmpty()) {
-                            int currProcess = processQueue.getFirst().processID;
-                            processQueue.removeFirst();
-                            processQueue.add(new ProcessData(currProcess));
-                            processExecution.switchToProcess(processQueue.getFirst().processID);
-                            procStartTime = System.currentTimeMillis();
+                        try {
+                            mutex.acquire();
+                            if (currProcess != -1) {
+                                LinkedList<ProcessData> theProcess = listOfLists.get(listPosition);
+                                currProcess = theProcess.removeFirst().processID;
+                                listOfLists.get(listPosition + 1).add(new ProcessData(currProcess));
+
+                                if (!listOfLists.getFirst().isEmpty()) {
+                                    LinkedList<ProcessData> changeProcess = listOfLists.get(0);
+                                    currProcess = changeProcess.removeFirst().processID;
+                                    processExecution.switchToProcess(currProcess);
+                                }
+                                else {
+                                    listPosition++;
+                                     do {
+                                         if (listOfLists.get(listPosition).isEmpty()) {
+                                             listPosition++;
+                                             listIsEmpty = true;
+
+                                         }
+                                         else {
+                                             LinkedList<ProcessData> changeProcess = listOfLists.get(listPosition);
+                                             currProcess = changeProcess.getFirst().processID;
+                                             processExecution.switchToProcess(currProcess);
+                                             listIsEmpty = false;
+                                         }
+                                     } while (listIsEmpty != false);
+                                }
+
+                            }
+                            mutex.release();
+                        } catch (InterruptedException e) {
+
                         }
+
                     }
                 }
             });
@@ -250,10 +307,24 @@ public class Scheduler {
 			break;
 		case FB:	//Feedback
 			System.out.println("processAddfall:: Feedback, quantum = " + quantum);
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
-			break;
+            try {
+                mutex.acquire();
+                if (currProcess == -1) {
+                    listOfLists.get(0).add(new ProcessData(processID));
+                    processExecution.switchToProcess(processID);
+                    listPosition = 0;
+                    currProcess = processID;
+                    procStartTime = System.currentTimeMillis();
+                }
+                else {
+                    listOfLists.get(0).add(new ProcessData(processID));
+                }
+                mutex.release();
+            } catch (InterruptedException e) {
+
+            }
+
+            break;
 		}
 
 	}
@@ -389,9 +460,14 @@ public class Scheduler {
 			break;
 		case FB:	//Feedback
 			System.out.println("processFinishedFall:: Feedback, quantum = " + quantum);
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+            if (!listOfLists.get(listPosition).isEmpty()) {
+                Object finished = listOfLists.get(listPosition).remove();
+                processExecution.switchToProcess(currProcess);
+                procStartTime = System.currentTimeMillis();
+            }
+            else {
+                currProcess = -1;
+            }
 			break;
 		}
 
