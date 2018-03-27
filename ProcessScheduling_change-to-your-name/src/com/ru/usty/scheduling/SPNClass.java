@@ -2,7 +2,7 @@ package com.ru.usty.scheduling;
 
 import java.util.Comparator;
 
-public class SPNClass implements Comparator<Integer> {
+public class SPNClass implements Comparator<ProcessData> {
 
     Scheduler SPNs;
 
@@ -12,11 +12,11 @@ public class SPNClass implements Comparator<Integer> {
 
 
     @Override
-    public int compare(Integer t1, Integer t2) {
+    public int compare(ProcessData t1, ProcessData t2) {
 
 
-        long first = SPNs.processExecution.getProcessInfo(t1).totalServiceTime;
-        long second =SPNs.processExecution.getProcessInfo(t2).totalServiceTime;
+        long first = SPNs.processExecution.getProcessInfo(t1.processID).totalServiceTime;
+        long second =SPNs.processExecution.getProcessInfo(t2.processID).totalServiceTime;
 
         if (first < second) {
             return -1;

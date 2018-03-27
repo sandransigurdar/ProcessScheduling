@@ -2,7 +2,7 @@ package com.ru.usty.scheduling;
 
 import java.util.Comparator;
 
-public class SRTClass implements Comparator<Integer> {
+public class SRTClass implements Comparator<ProcessData> {
 
     Scheduler SRTs;
 
@@ -12,10 +12,10 @@ public class SRTClass implements Comparator<Integer> {
 
 
     @Override
-    public int compare(Integer t1, Integer t2) {
+    public int compare(ProcessData t1, ProcessData t2) {
 
-        long first = SRTs.processExecution.getProcessInfo(t1).totalServiceTime - SRTs.processExecution.getProcessInfo(t1).elapsedExecutionTime;
-        long second = SRTs.processExecution.getProcessInfo(t2).totalServiceTime - SRTs.processExecution.getProcessInfo(t2).elapsedExecutionTime;
+        long first = SRTs.processExecution.getProcessInfo(t1.processID).totalServiceTime - SRTs.processExecution.getProcessInfo(t1.processID).elapsedExecutionTime;
+        long second = SRTs.processExecution.getProcessInfo(t2.processID).totalServiceTime - SRTs.processExecution.getProcessInfo(t2.processID).elapsedExecutionTime;
 
         if (first < second) {
             return -1;

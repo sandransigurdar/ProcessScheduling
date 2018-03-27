@@ -4,7 +4,7 @@ import org.omg.CORBA.INTERNAL;
 
 import java.util.Comparator;
 
-public class HHRNClass implements Comparator<Integer> {
+public class HHRNClass implements Comparator<ProcessData> {
 
     Scheduler HHRNs;
 
@@ -13,16 +13,15 @@ public class HHRNClass implements Comparator<Integer> {
     }
 
     @Override
-    public int compare(Integer t1, Integer t2) {
-        System.out.println(HHRNs.processExecution.getProcessInfo(t1).elapsedWaitingTime);
-        long first = (HHRNs.processExecution.getProcessInfo(t1).elapsedWaitingTime + HHRNs.processExecution.getProcessInfo(t1).totalServiceTime) / HHRNs.processExecution.getProcessInfo(t1).totalServiceTime;
-        long second = (HHRNs.processExecution.getProcessInfo(t2).elapsedWaitingTime + HHRNs.processExecution.getProcessInfo(t2).totalServiceTime) / HHRNs.processExecution.getProcessInfo(t2).totalServiceTime;
+    public int compare(ProcessData t1, ProcessData t2) {
+        long first = (HHRNs.processExecution.getProcessInfo(t1.processID).elapsedWaitingTime + HHRNs.processExecution.getProcessInfo(t1.processID).totalServiceTime) / HHRNs.processExecution.getProcessInfo(t1.processID).totalServiceTime;
+        long second = (HHRNs.processExecution.getProcessInfo(t2.processID).elapsedWaitingTime + HHRNs.processExecution.getProcessInfo(t2.processID).totalServiceTime) / HHRNs.processExecution.getProcessInfo(t2.processID).totalServiceTime;
 
         if (first < second) {
-            return -1;
+            return 1;
         }
         if (first > second) {
-            return 1;
+            return -1;
         }
 
         return 0;

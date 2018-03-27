@@ -3,41 +3,34 @@ package com.ru.usty.scheduling;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 
-import com.ru.usty.scheduling.process.Process;
+
 import com.ru.usty.scheduling.process.ProcessExecution;
-import com.ru.usty.scheduling.process.ProcessInfo;
 public class Scheduler {
 	ProcessExecution processExecution;
 	Policy policy;
     int quantum;
     private Thread newThread = null;
 	LinkedList<ProcessData> processQueue;
-	PriorityQueue<Integer> prioQueue;
+	PriorityQueue<ProcessData> prioQueue;
 	HHRNClass comp;
 	SPNClass comp1;
 	SRTClass comp2;
 	long procStartTime;
 	int currProcess;
-    int newprocess;
+    ProcessData newProcess;
+    ProcessData oldProcess;
+    ProcessData currentProcess;
 
 
     //Time measurements
     long runTimeStarts;
     long runTimeEnds;
-    long FCFSavgResponse;
-    long RRavgResponse;
-    long RRavgTurnaround;
-    long FCFSavgTurnaround;
+    long avgResponse;
+    long avgTurnaround;
     int processCounter;
     LinkedList<Long> responseTimes;
     LinkedList<Long> turnaroundTimes;
     Semaphore mutex;
-
-   
-
-	/**
-	 * Add any objects and variables here (if needed)
-	 */
 
 
 	/**
@@ -56,24 +49,27 @@ public class Scheduler {
 
 		this.policy = policy;
 		this.quantum = quantum;
+        responseTimes = new LinkedList<Long>();
+        turnaroundTimes = new LinkedList<Long>();
+        oldProcess = null;
+        newProcess = null;
+        avgResponse = 0;
+        avgTurnaround = 0;
+        processCounter = 0;
 
-		processQueue = new LinkedList<ProcessData>();
-        prioQueue = new PriorityQueue<Integer>();
-        mutex = new Semaphore(1);
+		
+        
 
 		switch(policy) {
 		case FCFS:	//First-come-first-served
 			System.out.println("Starting new scheduling task: First-come-first-served");
             runTimeStarts = System.currentTimeMillis();
-            responseTimes = new LinkedList<Long>();
-            turnaroundTimes = new LinkedList<Long>();
-
+            processQueue = new LinkedList<ProcessData>();
 			break;
 		case RR:	//Round robin
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
-			responseTimes = new LinkedList<Long>();
-			turnaroundTimes = new LinkedList<Long>();
-			processCounter = 0;
+			processQueue = new LinkedList<ProcessData>();
+			mutex = new Semaphore(1);
 			newThread = new Thread(new Runnable() {
 			    @Override
 			    public void run() {
@@ -114,22 +110,17 @@ public class Scheduler {
 		case SPN:	//Shortest process next
 			System.out.println("Starting new scheduling task: Shortest process next");
 			comp1 = new SPNClass(this);
-			prioQueue = new PriorityQueue<Integer>(10,comp1);
-            responseTimes= new LinkedList<Long>();
+			prioQueue = new PriorityQueue<ProcessData>(10,comp1);
 			break;
 		case SRT:	//Shortest remaining time
 			System.out.println("Starting new scheduling task: Shortest remaining time");
 			comp2 = new SRTClass(this);
-			prioQueue = new PriorityQueue<Integer>(10,comp2);
-            responseTimes = new LinkedList<Long>();
+			prioQueue = new PriorityQueue<ProcessData>(10,comp2);
 			break;
 		case HRRN:	//Highest response ratio next
 			System.out.println("Starting new scheduling task: Highest response ratio next");
 			comp = new HHRNClass(this);
-			prioQueue = new PriorityQueue<Integer>(10,comp);
-            responseTimes = new LinkedList<Long>();
-
-
+			prioQueue = new PriorityQueue<ProcessData>(10,comp);
 			break;
 		case FB:	//Feedback
 			System.out.println("Starting new scheduling task: Feedback, quantum = " + quantum);
@@ -169,87 +160,91 @@ public class Scheduler {
 	 */
 
 	public void processAdded(int processID) {
-		//processExecution.switchToProcess(processID);
-		//System.out.println(processExecution.getProcessInfo(processID).totalServiceTime);
-		//Eigum ad halda afram ad fikta i thessu, vidbot:
-
-		/**
-		 * Add scheduling code here
-		 */
 		switch(policy) {
 		case FCFS:	//First-come-first-served
-			ProcessData process = new ProcessData(processID);
-			process.setStartTime();
+			newProcess = new ProcessData(processID);
+			newProcess.setStartTime();
 
 			if(processQueue.isEmpty() && currProcess == -1) {
-			    process.setStopTime();
-			    responseTimes.add(process.stopTime);
+				newProcess.setStopTime();
+			    responseTimes.add(newProcess.stopTime);
 				processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
 			    currProcess = processID;
 			}
-			processQueue.add(process);
+			processQueue.add(newProcess);
 			break;
 		case RR:	//Round robin
 			try {
 				mutex.acquire();
-				ProcessData rrprocess = new ProcessData(processID);
-				rrprocess.setStartTime();
+				newProcess = new ProcessData(processID);
+				newProcess.setStartTime();
 				
 				if(currProcess == -1) {
-				    rrprocess.setStopTime();
-				    responseTimes.add(rrprocess.stopTime);
+					newProcess.setStopTime();
+				    responseTimes.add(newProcess.stopTime);
 				    processExecution.switchToProcess(processID);// Vid munum nota thetta, en kannski a fleiri stodum
 				    currProcess = processID;
 				    procStartTime = System.currentTimeMillis();
 				}
-				processQueue.add(rrprocess);
+				processQueue.add(newProcess);
 				mutex.release();
 			} catch (InterruptedException e) {	}
 			
 
 			break;
 		case SPN:	//Shortest process next
-			System.out.println("processAddfall:: Shortest process next");
-			ProcessData spnprocess = new ProcessData(processID);
-			spnprocess.setStartTime();
-
+			newProcess = new ProcessData(processID);
+			newProcess.setStartTime();
 
 			if (currProcess == -1) {
+				newProcess.setStopTime();
+				responseTimes.add(newProcess.stopTime);
 			    processExecution.switchToProcess(processID);
 			    currProcess = processID;
+			    currentProcess = newProcess;
             }
-            else {
-			    prioQueue.add(processID);
-            }
-
+			else {
+				prioQueue.add(newProcess);
+			}
 
 			break;
 		case SRT:	//Shortest remaining time
-			System.out.println("processAddfall:: Shortest remaining time");
-
+        	newProcess = new ProcessData(processID);
+        	newProcess.setStartTime();
 
             if (prioQueue.isEmpty() && currProcess == -1) {
-                prioQueue.add(processID);
+				newProcess.setStopTime();
+				responseTimes.add(newProcess.stopTime);
+                prioQueue.add(newProcess);
                 processExecution.switchToProcess(processID);
                 currProcess = processID;
+                currentProcess = newProcess;
             }
             else {
-                prioQueue.add(processID);
-                if (prioQueue.peek() != currProcess) {
-                    processExecution.switchToProcess(prioQueue.peek());
+                prioQueue.add(newProcess);
+                if (prioQueue.peek() != currentProcess) {
+                	if(newProcess.stopTime != 0) {
+        				newProcess.setStopTime();
+        				responseTimes.add(newProcess.stopTime);
+                	}
+                    processExecution.switchToProcess(prioQueue.peek().processID);
                 }
             }
 
 			break;
 		case HRRN:	//Highest response ratio next
-			System.out.println("processAddfall:: Highest response ratio next");
+			newProcess = new ProcessData(processID);
+        	newProcess.setStartTime();
 
             if (currProcess == -1) {
+            	newProcess.setStopTime();
+            	responseTimes.add(newProcess.stopTime);
                 processExecution.switchToProcess(processID);
                 currProcess = processID;
+                currentProcess = newProcess;
             }
             else {
-                prioQueue.add(processID);
+                prioQueue.add(newProcess);
             }
 
 			break;
@@ -267,56 +262,55 @@ public class Scheduler {
 	 * DO NOT CHANGE DEFINITION OF OPERATION
 	 */
 	public void processFinished(int processID) {
-		/**
-		 * Add scheduling code here
-		 */
-
 		switch(policy) {
 		case FCFS:	//First-come-first-served
-			ProcessData oldProcess = processQueue.removeFirst();
+			processCounter++;
+			oldProcess = processQueue.removeFirst();
 			oldProcess.setFinishTime();
 			turnaroundTimes.add(oldProcess.finishTime);
 
 			if (!processQueue.isEmpty()) {
-			    ProcessData process = processQueue.getFirst();
-			    if (process.stopTime == 0) {
-			        process.setStopTime();
-			        responseTimes.add(process.stopTime);
+			    newProcess = processQueue.getFirst();
+			    if (newProcess.stopTime == 0) {
+			    	newProcess.setStopTime();
+			        responseTimes.add(newProcess.stopTime);
 			    }
-			    processExecution.switchToProcess(process.processID);
+			    processExecution.switchToProcess(newProcess.processID);
 			}
 			else {
 			    currProcess = -1;
-			    FCFSavgResponse = TimeCalculations.AverageTime(responseTimes);
-			    FCFSavgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
-			    System.out.println("FCFS average response time: " + FCFSavgResponse);
-			    System.out.println("FCFS average turnaround time: " + FCFSavgTurnaround);
+			    if (processCounter == 15) {
+				    avgResponse = TimeCalculations.AverageTime(responseTimes);
+				    avgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
+				    System.out.println("FCFS average response time:"+avgResponse);
+				    System.out.println("FCFS average turnaround time:"+avgTurnaround);
+			    }
 			}
 			break;
 		case RR:	//Round robin
 			try {
 				mutex.acquire();
 				processCounter++;
-				ProcessData oldRRProcess = processQueue.remove();
-				oldRRProcess.setFinishTime();
-				turnaroundTimes.add(oldRRProcess.finishTime);
+				oldProcess = processQueue.remove();
+				oldProcess.setFinishTime();
+				turnaroundTimes.add(oldProcess.finishTime);
 
 				if (!processQueue.isEmpty()) {
-					ProcessData process = processQueue.getFirst();
-				    if (process.stopTime == 0) {
-				        process.setStopTime();
-				        responseTimes.add(process.stopTime);
+					newProcess = processQueue.getFirst();
+				    if (newProcess.stopTime == 0) {
+				    	newProcess.setStopTime();
+				        responseTimes.add(newProcess.stopTime);
 				    }
-				    processExecution.switchToProcess(process.processID);
+				    processExecution.switchToProcess(newProcess.processID);
 				    procStartTime = System.currentTimeMillis();
 				}
 				else {
 				    currProcess = -1;
 				    if (processCounter == 15) {
-					    RRavgResponse = TimeCalculations.AverageTime(responseTimes);
-					    RRavgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
-					    System.out.println("Round robin average response time:"+RRavgResponse);
-					    System.out.println("Round robin average turnaround time:"+RRavgTurnaround);
+					    avgResponse = TimeCalculations.AverageTime(responseTimes);
+					    avgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
+					    System.out.println("Round robin average response time:"+avgResponse);
+					    System.out.println("Round robin average turnaround time:"+avgTurnaround);
 				    }
 				}
 				mutex.release();
@@ -324,41 +318,72 @@ public class Scheduler {
 			
             break;
 		case SPN:	//Shortest process next
-			System.out.println("processFinishedFall:: Shortest process next");
+			processCounter++;
+			currentProcess.setFinishTime();
+			turnaroundTimes.add(currentProcess.finishTime);
 
 			if (!prioQueue.isEmpty()) {
-                newprocess = prioQueue.remove();
-                processExecution.switchToProcess(newprocess);
+				newProcess = prioQueue.remove();
+				newProcess.setStopTime();
+		        responseTimes.add(newProcess.stopTime);
+		        currentProcess = newProcess;
+                processExecution.switchToProcess(newProcess.processID);
             }
             else {
 			    currProcess = -1;
+			    if (processCounter == 15) {
+				    avgResponse = TimeCalculations.AverageTime(responseTimes);
+				    avgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
+				    System.out.println("Round robin average response time:"+avgResponse);
+				    System.out.println("Round robin average turnaround time:"+avgTurnaround);
+			    }
             }
-
-
-
 			break;
 		case SRT:	//Shortest remaining time
-			System.out.println("processFinishedFall:: Shortest remaining time");
-
-            prioQueue.remove();
+			processCounter++;
+			oldProcess = prioQueue.remove();
+			oldProcess.setFinishTime();
+			turnaroundTimes.add(oldProcess.finishTime);
+			
             if (!prioQueue.isEmpty()) {
-                processExecution.switchToProcess(prioQueue.peek());
+            	newProcess = prioQueue.peek();
+            	if (newProcess.stopTime == 0) {
+            		newProcess.setStopTime();
+            		responseTimes.add(newProcess.stopTime);
+            	}
+                processExecution.switchToProcess(newProcess.processID);
             }
             else {
                 currProcess = -1;
+                if (processCounter == 15) {
+				    avgResponse = TimeCalculations.AverageTime(responseTimes);
+				    avgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
+				    System.out.println("Round robin average response time:"+avgResponse);
+				    System.out.println("Round robin average turnaround time:"+avgTurnaround);
+			    }
             }
 
 			break;
 		case HRRN:	//Highest response ratio next
-			System.out.println("processFinishedFall:: Highest response ratio next");
-
+			processCounter++;
+			currentProcess.setFinishTime();
+			turnaroundTimes.add(currentProcess.finishTime);
 
             if (!prioQueue.isEmpty()) {
-                newprocess = prioQueue.remove();
-                processExecution.switchToProcess(newprocess);
+                newProcess = prioQueue.remove();
+                newProcess.setStopTime();
+                responseTimes.add(newProcess.stopTime);
+                processExecution.switchToProcess(newProcess.processID);
+                currentProcess = newProcess;
             }
             else {
                 currProcess = -1;
+                if (processCounter == 15) {
+				    avgResponse = TimeCalculations.AverageTime(responseTimes);
+				    avgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
+				    System.out.println("HRRN average response time:"+avgResponse);
+				    System.out.println("HRRN average turnaround time:"+avgTurnaround);
+			    }
             }
 
 			break;
