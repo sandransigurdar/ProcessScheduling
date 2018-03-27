@@ -186,6 +186,10 @@ public class Scheduler {
 	                            		currentProcess = currentList.removeFirst();
 	                            		indexOfCurrent = newIndex;
 	                                    processExecution.switchToProcess(currentProcess.processID);
+	                                    if (currentProcess.stopTime == 0) {
+	                                        currentProcess.setStopTime();
+	                                        responseTimes.add(currentProcess.stopTime);
+                                        }
 	                            	}
 	                            	else {
 	                            		newIndex++;
@@ -303,7 +307,12 @@ public class Scheduler {
             try {
                 mutex.acquire();
                 newProcess = new ProcessData(processID);
+                newProcess.setStartTime();
                 if (currProcess == -1) {
+                    if (newProcess.stopTime == 0) {
+                        newProcess.setStopTime();
+                        responseTimes.add(newProcess.stopTime);
+                    }
                 	currentProcess = newProcess;
                 	indexOfCurrent = 0;
                     processExecution.switchToProcess(processID);
@@ -454,14 +463,23 @@ public class Scheduler {
 			break;
 		case FB:	//Feedback
 			System.out.println("processFinishedFall:: Feedback, quantum = " + quantum);
-            if (!listOfLists.get(listPosition).isEmpty()) {
-                Object finished = listOfLists.get(listPosition).remove();
-                processExecution.switchToProcess(currProcess);
-                procStartTime = System.currentTimeMillis();
+            try {
+                mutex.acquire();
+                processCounter++;
+                currentProcess.setFinishTime();
+                turnaroundTimes.add(currentProcess.finishTime);
+                
+                if(processCounter == 15) {
+                    avgResponse = TimeCalculations.AverageTime(responseTimes);
+                    avgTurnaround = TimeCalculations.AverageTime(turnaroundTimes);
+                    System.out.println("FB average response time:"+avgResponse);
+                    System.out.println("FB average turnaround time:"+avgTurnaround);
+                }
+                mutex.release();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            else {
-                currProcess = -1;
-            }
+
 			break;
 		}
 
